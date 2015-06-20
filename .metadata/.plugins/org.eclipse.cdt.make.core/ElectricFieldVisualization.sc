@@ -10,6 +10,9 @@
 <includePath path="/usr/local/include"/>
 <includePath path="/usr/lib/gcc/x86_64-unknown-linux-gnu/4.9.2/include-fixed"/>
 <includePath path="/usr/include"/>
+<includePath path="/opt/cuda/samples/3_Imaging"/>
+<includePath path="/opt/cuda/samples/common/inc"/>
+<includePath path="/home/samba/kuzmichp/Documents/GPU/efield/ElectricFieldVisualization"/>
 <definedSymbol symbol="__CUDA_PREC_SQRT="/>
 <definedSymbol symbol="__CUDACC__="/>
 <definedSymbol symbol="__CUDA_ARCH__=200"/>
@@ -283,6 +286,9 @@
 <includePath path="/usr/local/include"/>
 <includePath path="/usr/lib/gcc/x86_64-unknown-linux-gnu/4.9.2/include-fixed"/>
 <includePath path="/usr/include"/>
+<includePath path="/opt/cuda/samples/3_Imaging"/>
+<includePath path="/opt/cuda/samples/common/inc"/>
+<includePath path="/home/samba/kuzmichp/Documents/GPU/efield/ElectricFieldVisualization"/>
 <definedSymbol symbol="__CUDA_PREC_SQRT="/>
 <definedSymbol symbol="__CUDACC__="/>
 <definedSymbol symbol="__CUDA_ARCH__=200"/>
@@ -556,6 +562,9 @@
 <includePath path="/usr/local/include"/>
 <includePath path="/usr/lib/gcc/x86_64-unknown-linux-gnu/4.9.2/include-fixed"/>
 <includePath path="/usr/include"/>
+<includePath path="/opt/cuda/samples/3_Imaging"/>
+<includePath path="/opt/cuda/samples/common/inc"/>
+<includePath path="/home/samba/kuzmichp/Documents/GPU/efield/ElectricFieldVisualization"/>
 <definedSymbol symbol="__CUDA_PREC_SQRT="/>
 <definedSymbol symbol="__CUDACC__="/>
 <definedSymbol symbol="__CUDA_ARCH__=200"/>

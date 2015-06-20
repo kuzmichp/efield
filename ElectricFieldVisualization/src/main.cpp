@@ -63,6 +63,17 @@ unsigned int image_width = 512;
 unsigned int image_height = 512;
 int iGLUTWindowHandle = 0;          // handle to the GLUT window
 
+/*
+ * Infomation about charges
+ */
+int chrg_num;
+unsigned int *x_pos;
+unsigned int *y_pos;
+int *vals;
+
+#define MAX_CHARGE_VAL 5
+#define MIN_CHARGE_VAL -5
+
 // pbo and fbo variables
 #ifdef USE_TEXSUBIMAGE2D
 GLuint pbo_dest;
@@ -89,7 +100,6 @@ bool enable_cuda     = true;
 
 int   *pArgc = NULL;
 char **pArgv = NULL;
-
 
 // Timer
 static int fpsCount = 0;
@@ -143,8 +153,9 @@ bool IsOpenGLAvailable(const char *appName)
 ////////////////////////////////////////////////////////////////////////////////
 extern "C" void
 launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
-                   unsigned int *g_odata,
-                   int imgw);
+                   unsigned int *g_odata, unsigned int *x_pos,
+                   unsigned int *y_pos, int *vals,
+                   int imgw, int chrg_num, float *v);
 
 // Forward declarations
 void runStdProgram(int argc, char **argv);
@@ -169,6 +180,8 @@ void idle();
 void keyboard(unsigned char key, int x, int y);
 void reshape(int w, int h);
 void mainMenu(int i);
+
+void createCharges();
 
 #ifdef USE_TEXSUBIMAGE2D
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,9 +281,10 @@ void generateCUDAImage()
     dim3 block(16, 16, 1);
     //dim3 block(16, 16, 1);
     dim3 grid(image_width / block.x, image_height / block.y, 1);
-    // execute CUDA kernel
-    launch_cudaProcess(grid, block, 0, out_data, image_width);
 
+    float v;
+    // execute CUDA kernel
+    launch_cudaProcess(grid, block, 0, out_data, x_pos, y_pos, vals, image_width, chrg_num, &v);
 
     // CUDA generated data in cuda memory or in a mapped PBO made of BGRA 8 bits
     // 2 solutions, here :
@@ -512,6 +526,11 @@ main(int argc, char **argv)
 
     printf("%s Starting...\n\n", argv[0]);
 
+    /*
+     * Set chrg_num
+     */
+    chrg_num = argv[1] == NULL ? 20 : atoi(argv[1]);
+
     if (checkCmdLineFlag(argc, (const char **)argv, "file"))
     {
 
@@ -543,6 +562,23 @@ main(int argc, char **argv)
     }
 
     exit(EXIT_SUCCESS);
+}
+
+// function creates set of charges
+void createCharges()
+{
+	int i;
+
+	if ((x_pos = (unsigned int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+	if ((y_pos = (unsigned int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+	if ((vals = (int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+
+	for (i = 0; i < chrg_num; i++)
+	{
+		x_pos[i] = rand()%image_width;
+		y_pos[i] = rand()%image_height;
+		vals[i] =  (int)(rand()%(MAX_CHARGE_VAL - MIN_CHARGE_VAL + 1) + MIN_CHARGE_VAL);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -716,6 +752,7 @@ runStdProgram(int argc, char **argv)
 
     // Now initialize CUDA context (GL context has been created already)
     initCUDA(argc, argv, true);
+    createCharges();
 
     sdkCreateTimer(&timer);
     sdkResetTimer(&timer);
