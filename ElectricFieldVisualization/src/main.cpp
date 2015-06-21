@@ -67,12 +67,17 @@ int iGLUTWindowHandle = 0;          // handle to the GLUT window
  * Infomation about charges
  */
 int chrg_num;
-unsigned int *x_pos;
-unsigned int *y_pos;
+int *x_pos;
+int *y_pos;
 int *vals;
+int *dir;
 
-#define MAX_CHARGE_VAL 5
-#define MIN_CHARGE_VAL -5
+int mv;
+
+#define MAX_CHARGE_VAL 10
+#define MIN_CHARGE_VAL -10
+#define MAX_DIR_VAL 2
+#define MIN_DIR_VAL -2
 
 // pbo and fbo variables
 #ifdef USE_TEXSUBIMAGE2D
@@ -153,9 +158,9 @@ bool IsOpenGLAvailable(const char *appName)
 ////////////////////////////////////////////////////////////////////////////////
 extern "C" void
 launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
-                   unsigned int *g_odata, unsigned int *x_pos,
-                   unsigned int *y_pos, int *vals,
-                   int imgw, int chrg_num, float *v);
+                   unsigned int *g_odata, int *x_pos,
+                   int *y_pos, int *vals, int *dir,
+                   int imgw, int chrg_num, int mv);
 
 // Forward declarations
 void runStdProgram(int argc, char **argv);
@@ -282,9 +287,8 @@ void generateCUDAImage()
     //dim3 block(16, 16, 1);
     dim3 grid(image_width / block.x, image_height / block.y, 1);
 
-    float v;
     // execute CUDA kernel
-    launch_cudaProcess(grid, block, 0, out_data, x_pos, y_pos, vals, image_width, chrg_num, &v);
+    launch_cudaProcess(grid, block, 0, out_data, x_pos, y_pos, vals, dir, image_width, chrg_num, mv);
 
     // CUDA generated data in cuda memory or in a mapped PBO made of BGRA 8 bits
     // 2 solutions, here :
@@ -533,7 +537,6 @@ main(int argc, char **argv)
 
     if (checkCmdLineFlag(argc, (const char **)argv, "file"))
     {
-
         getCmdLineArgumentString(argc, (const char **)argv, "file", &ref_file);
     }
 
@@ -569,15 +572,17 @@ void createCharges()
 {
 	int i;
 
-	if ((x_pos = (unsigned int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
-	if ((y_pos = (unsigned int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+	if ((x_pos = (int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+	if ((y_pos = (int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
 	if ((vals = (int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
+	if ((dir = (int *) calloc(chrg_num, sizeof(int))) == NULL) { exit(EXIT_FAILURE); }
 
 	for (i = 0; i < chrg_num; i++)
 	{
 		x_pos[i] = rand()%image_width;
 		y_pos[i] = rand()%image_height;
-		vals[i] =  (int)(rand()%(MAX_CHARGE_VAL - MIN_CHARGE_VAL + 1) + MIN_CHARGE_VAL);
+		vals[i] =  rand()%(MAX_CHARGE_VAL - MIN_CHARGE_VAL + 1) + MIN_CHARGE_VAL;
+		dir[i] = rand()%2 == 0 ? rand()%2 + 1 : -1*(rand()%2 + 1);
 	}
 }
 
