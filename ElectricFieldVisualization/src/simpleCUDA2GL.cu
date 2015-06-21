@@ -65,27 +65,39 @@ determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v
 
     for (i = 0; i < chrg_num; i++)
     {
-    	//TODO: rozpatrywać jedynie ładunki o określonym położeniu
+    	// 1px ~ 1e-3m
     	int dx = x - d_x[i];
     	int dy = y - d_y[i];
 
     	int dist2 = dx*dx + dy*dy;
-    	// E = k*Q/r^2 (lcl_int e9)
-    	float lcl_int = (COULOMBS_CONST*d_v[i]/(float)dist2);
-    	//intens[i] = lcl_int;
+
+    	/*
+    	 * E = k*Q/r^2
+    	 * lcl_int - wartość absolutna natężenia pola w punkcie (x, y), generowana przez pojedyńczy ładunek q[i]
+    	 */
+    	float lcl_int = (COULOMBS_CONST*abs(d_v[i])/(float)dist2);
+
+    	// rozłożenie wektora natężenia pola na składowe
     	float dist = sqrtf((float)dist2);
 
+    	/*
+    	 *    |\
+    	 * dy | \dist
+    	 *    |__\
+    	 *     dx
+    	 */
+    	//TODO: sprawdzanie dzielenia przez 0
     	res.x += (dx/dist)*lcl_int;
     	res.y += (dy/dist)*lcl_int;
     }
 
-    res.x *= 10000;
-    res.y *= 10000;
+    res.x *= 8000;
+    res.y *= 8000;
 
     float gbl_int = sqrtf(res.x*res.x + res.y*res.y);
     int clr = (int)gbl_int;
 
-    g_odata[y*imgw+x] = rgbToInt(clr/10, clr/15, clr/3);
+    g_odata[y*imgw+x] = rgbToInt(clr/70, clr/300, clr/20);
 }
 
 __global__ void
@@ -117,26 +129,20 @@ moveCharges(int *d_x, int *d_y, int *d_dir, int chrg_num)
     }
     else {}
 
-	__syncthreads();
+	//__syncthreads();
 }
 
 extern "C" void
-launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
+launch_cudaProcess(dim3 grid, dim3 block,
                    unsigned int *g_odata, int *x_pos,
-                   int *y_pos, int *dir, int *vals,
+                   int *y_pos, int *vals, int *dir,
                    int imgw, int chrg_num, int mv)
 {
-	int i;
 	// device vectors
 	int *d_x, *d_y, *d_v, *d_dir;
 	dim3 mvBlock(chrg_num, 1, 1);
 
-	fprintf(stderr, "Kierunki:\n");
-
-	for (i = 0; i < chrg_num; i++)
-	{
-		fprintf(stderr, "[%d] - %d\n", i + 1, dir[i]);
-	}
+	fprintf(stderr, "x: %d, y: %d\n", x_pos[0], y_pos[0]);
 
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_x, sizeof(int) * chrg_num));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_y, sizeof(int) * chrg_num));
@@ -148,7 +154,9 @@ launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
 	CUDA_CHECK_RETURN(cudaMemcpy((void *)d_v, (void *)vals, sizeof(int)*chrg_num, cudaMemcpyHostToDevice));
 	CUDA_CHECK_RETURN(cudaMemcpy((void *)d_dir, (void *)dir, sizeof(int)*chrg_num, cudaMemcpyHostToDevice));
 
-	if (mv == 0) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
+
+	//if (mv == 0) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
+	if (1 != 1) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
 
 	determineIntensity<<<grid, block>>>(g_odata, imgw, d_x, d_y, d_v, chrg_num);
 
@@ -158,8 +166,8 @@ launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
 	    exit(EXIT_FAILURE);
 	}
 
-	//update positions
-	if (1 == 1)
+	// uaktualnianie pozycji ładunków
+	if (mv == 0)
 	{
 		CUDA_CHECK_RETURN(cudaMemcpy((void *)x_pos, (void *)d_x, sizeof(int)*chrg_num, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_RETURN(cudaMemcpy((void *)y_pos, (void *)d_y, sizeof(int)*chrg_num, cudaMemcpyDeviceToHost));

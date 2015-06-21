@@ -76,8 +76,7 @@ int mv;
 
 #define MAX_CHARGE_VAL 10
 #define MIN_CHARGE_VAL -10
-#define MAX_DIR_VAL 2
-#define MIN_DIR_VAL -2
+#define DEFAULT_CHRG_NUM 20
 
 // pbo and fbo variables
 #ifdef USE_TEXSUBIMAGE2D
@@ -157,7 +156,7 @@ bool IsOpenGLAvailable(const char *appName)
 
 ////////////////////////////////////////////////////////////////////////////////
 extern "C" void
-launch_cudaProcess(dim3 grid, dim3 block, int sbytes,
+launch_cudaProcess(dim3 grid, dim3 block,
                    unsigned int *g_odata, int *x_pos,
                    int *y_pos, int *vals, int *dir,
                    int imgw, int chrg_num, int mv);
@@ -288,7 +287,7 @@ void generateCUDAImage()
     dim3 grid(image_width / block.x, image_height / block.y, 1);
 
     // execute CUDA kernel
-    launch_cudaProcess(grid, block, 0, out_data, x_pos, y_pos, vals, dir, image_width, chrg_num, mv);
+    launch_cudaProcess(grid, block, out_data, x_pos, y_pos, vals, dir, image_width, chrg_num, mv);
 
     // CUDA generated data in cuda memory or in a mapped PBO made of BGRA 8 bits
     // 2 solutions, here :
@@ -421,7 +420,7 @@ display()
     {
         char cTitle[256];
         float fps = 1000.0f / sdkGetAverageTimerValue(&timer);
-        sprintf(cTitle, "CUDA GL Post Processing (%d x %d): %.1f fps", window_width, window_height, fps);
+        sprintf(cTitle, "Electric Field Visualization (%d x %d): %.1f fps", window_width, window_height, fps);
         glutSetWindowTitle(cTitle);
         //printf("%s\n", cTitle);
         fpsCount = 0;
@@ -447,7 +446,12 @@ keyboard(unsigned char key, int /*x*/, int /*y*/)
         case (27) :
             Cleanup(EXIT_SUCCESS);
             break;
-
+        case (109) :
+			mv = 0;
+        	break;
+        case (110) :
+        	mv = 1;
+        	break;
         case ' ':
             enable_cuda ^= 1;
 #ifdef USE_TEXTURE_RGBA8UI
@@ -530,10 +534,8 @@ main(int argc, char **argv)
 
     printf("%s Starting...\n\n", argv[0]);
 
-    /*
-     * Set chrg_num
-     */
-    chrg_num = argv[1] == NULL ? 20 : atoi(argv[1]);
+    // set number of charges
+    chrg_num = argv[1] == NULL ? DEFAULT_CHRG_NUM : atoi(argv[1]);
 
     if (checkCmdLineFlag(argc, (const char **)argv, "file"))
     {
