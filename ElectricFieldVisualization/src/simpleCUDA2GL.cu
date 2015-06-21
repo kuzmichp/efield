@@ -16,6 +16,9 @@
 
 //9e9
 #define COULOMBS_CONST 9
+#define REAL_COEFF 1e9
+#define MIN_INTENS 1e-3
+#define VIS_COEFF 1e3
 
 /**
  * This macro checks return value of the CUDA runtime call and exits
@@ -75,7 +78,7 @@ determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v
     	 * E = k*Q/r^2
     	 * lcl_int - wartość absolutna natężenia pola w punkcie (x, y), generowana przez pojedyńczy ładunek q[i]
     	 */
-    	float lcl_int = (COULOMBS_CONST*abs(d_v[i])/(float)dist2);
+    	float lcl_int = (COULOMBS_CONST*d_v[i]/(float)dist2); // *10^9
 
     	// rozłożenie wektora natężenia pola na składowe
     	float dist = sqrtf((float)dist2);
@@ -86,18 +89,19 @@ determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v
     	 *    |__\
     	 *     dx
     	 */
-    	//TODO: sprawdzanie dzielenia przez 0
-    	res.x += (dx/dist)*lcl_int;
-    	res.y += (dy/dist)*lcl_int;
+    	//sprawdzanie dzielenia przez 0
+    	res.x += dist == 0 ? lcl_int : (dx/dist)*lcl_int;
+    	res.y += dist == 0 ? lcl_int : (dy/dist)*lcl_int;
     }
 
-    res.x *= 8000;
-    res.y *= 8000;
+    // prawdziwa wartość nateżenia pola ~ res*10^9
+    res.x *= VIS_COEFF;
+    res.y *= VIS_COEFF;
 
     float gbl_int = sqrtf(res.x*res.x + res.y*res.y);
     int clr = (int)gbl_int;
 
-    g_odata[y*imgw+x] = rgbToInt(clr/70, clr/300, clr/20);
+    g_odata[y*imgw+x] = rgbToInt(clr/10, clr/17, clr/9);
 }
 
 __global__ void
@@ -142,7 +146,7 @@ launch_cudaProcess(dim3 grid, dim3 block,
 	int *d_x, *d_y, *d_v, *d_dir;
 	dim3 mvBlock(chrg_num, 1, 1);
 
-	fprintf(stderr, "x: %d, y: %d\n", x_pos[0], y_pos[0]);
+	//fprintf(stderr, "x: %d, y: %d, v: %d\n", x_pos[0], y_pos[0], vals[0]);
 
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_x, sizeof(int) * chrg_num));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_y, sizeof(int) * chrg_num));
@@ -155,8 +159,8 @@ launch_cudaProcess(dim3 grid, dim3 block,
 	CUDA_CHECK_RETURN(cudaMemcpy((void *)d_dir, (void *)dir, sizeof(int)*chrg_num, cudaMemcpyHostToDevice));
 
 
-	//if (mv == 0) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
-	if (1 != 1) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
+	if (mv == 0) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
+	//if (1 != 1) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
 
 	determineIntensity<<<grid, block>>>(g_odata, imgw, d_x, d_y, d_v, chrg_num);
 
