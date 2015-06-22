@@ -53,7 +53,7 @@ __device__ int rgbToInt(float r, float g, float b)
 }
 
 __global__ void
-determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v, int chrg_num, float *l_i)
+determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v, int chrg_num)
 {
     int tx = threadIdx.x;
     int ty = threadIdx.y;
@@ -79,7 +79,6 @@ determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v
     	 * lcl_int - wartość absolutna natężenia pola w punkcie (x, y), generowana przez pojedyńczy ładunek q[i]
     	 */
     	float lcl_int = (COULOMBS_CONST*d_v[i]/(float)dist2); // *10^9
-    	//l_i[i] = lcl_int;
 
     	// rozłożenie wektora natężenia pola na składowe
     	float dist = sqrtf((float)dist2);
@@ -92,19 +91,14 @@ determineIntensity(unsigned int *g_odata, int imgw, int *d_x, int *d_y, int *d_v
     	 */
     	//sprawdzanie dzielenia przez 0
     	res.x += dist == 0 ? lcl_int : (dx/dist)*lcl_int;
-    	//l_i[i] = dist == 0 ? lcl_int : (dx/dist)*lcl_int;
     	res.y += dist == 0 ? lcl_int : (dy/dist)*lcl_int;
     }
-
-    //l_i[0] = res.x;
-    //l_i[1] = res.y;
 
     // prawdziwa wartość nateżenia pola ~ res*10^9
     res.x *= VIS_COEFF;
     res.y *= VIS_COEFF;
 
     float gbl_int = sqrtf(res.x*res.x + res.y*res.y);
-    //l_i[0] = gbl_int;
     int clr = (int)gbl_int;
 
     g_odata[y*imgw+x] = rgbToInt(clr*13, clr*5, clr*16);
@@ -152,19 +146,6 @@ launch_cudaProcess(dim3 grid, dim3 block,
 	int *d_x, *d_y, *d_v, *d_dir;
 	dim3 mvBlock(chrg_num, 1, 1);
 
-	// tmp
-	float *l_i, *h_li;
-
-	//int i;
-
-	//for (i = 0; i < chrg_num; i++)
-	//{
-	//	fprintf(stderr, "x: %d, y: %d, v: %d\n", x_pos[i], y_pos[i], vals[i]);
-	//}
-
-	// tmp
-	CUDA_CHECK_RETURN(cudaMalloc((void **)&l_i, sizeof(float) * chrg_num));
-
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_x, sizeof(int) * chrg_num));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_y, sizeof(int) * chrg_num));
 	CUDA_CHECK_RETURN(cudaMalloc((void **)&d_v, sizeof(int) * chrg_num));
@@ -177,9 +158,7 @@ launch_cudaProcess(dim3 grid, dim3 block,
 
 
 	if (mv == 0) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
-	//if (1 != 1) moveCharges<<<1, mvBlock>>>(d_x, d_y, d_dir, chrg_num);
-
-	determineIntensity<<<grid, block>>>(g_odata, imgw, d_x, d_y, d_v, chrg_num, l_i);
+	determineIntensity<<<grid, block>>>(g_odata, imgw, d_x, d_y, d_v, chrg_num);
 
 	if (cudaSuccess != cudaGetLastError())
 	{
@@ -194,16 +173,4 @@ launch_cudaProcess(dim3 grid, dim3 block,
 		CUDA_CHECK_RETURN(cudaMemcpy((void *)y_pos, (void *)d_y, sizeof(int)*chrg_num, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_RETURN(cudaMemcpy((void *)dir, (void *)d_dir, sizeof(int)*chrg_num, cudaMemcpyDeviceToHost));
 	}
-
-	h_li = (float *) calloc(chrg_num, sizeof(float));
-
-	CUDA_CHECK_RETURN(cudaMemcpy((void *)h_li, (void *)l_i, sizeof(float)*chrg_num, cudaMemcpyDeviceToHost));
-
-
-	//fprintf(stderr, "Global intensity:\n");
-	//for (i = 0; i < chrg_num; i++)
-	//{
-		//fprintf(stderr, "[%d] - %f\n", 0, h_li[0]);
-	//}
-
 }
