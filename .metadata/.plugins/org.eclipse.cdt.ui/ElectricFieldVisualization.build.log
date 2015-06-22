@@ -1,8 +1,0 @@
-10:10:54 **** Incremental Build of configuration Debug for project ElectricFieldVisualization ****
-make all 
-make: Warning: File 'src/simpleCUDA2GL.d' has modification time 1.7 s in the future
-make: warning:  Clock skew detected.  Your build may be incomplete.
-make: Nothing to be done for 'all'.
-
-10:10:54 Build Finished (took 59ms)
-
