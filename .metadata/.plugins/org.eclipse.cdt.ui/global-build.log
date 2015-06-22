@@ -1,0 +1,23 @@
+10:03:57 **** Incremental Build of configuration Debug for project ElectricFieldVisualization ****
+make all 
+make: Warning: File 'objects.mk' has modification time 6.4 s in the future
+Building file: ../src/main.cpp
+Invoking: NVCC Compiler
+/opt/cuda/bin/nvcc -I"/opt/cuda/samples/3_Imaging" -I"/opt/cuda/samples/common/inc" -I"/home/samba/kuzmichp/Documents/GPU/efield/ElectricFieldVisualization" -G -g -O0 -gencode arch=compute_20,code=sm_20  -odir "src" -M -o "src/main.d" "../src/main.cpp"
+/opt/cuda/bin/nvcc -I"/opt/cuda/samples/3_Imaging" -I"/opt/cuda/samples/common/inc" -I"/home/samba/kuzmichp/Documents/GPU/efield/ElectricFieldVisualization" -G -g -O0 --compile  -x c++ -o  "src/main.o" "../src/main.cpp"
+../src/main.cpp:114:60: note: #pragma message: Note: Using Texture fmt GL_RGBA16F_ARB
+ #   pragma message("Note: Using Texture fmt GL_RGBA16F_ARB")
+                                                            ^
+Finished building: ../src/main.cpp
+ 
+Building target: ElectricFieldVisualization
+Invoking: NVCC Linker
+/opt/cuda/bin/nvcc --cudart static -L"/opt/cuda/samples/common/lib/linux/x86_64" --relocatable-device-code=false -gencode arch=compute_20,code=compute_20 -gencode arch=compute_20,code=sm_20 -link -o  "ElectricFieldVisualization"  ./src/main.o ./src/simpleCUDA2GL.o   -lGL -lGLEW -lGLU -lX11 -lXi -lXmu -lglut
+Finished building target: ElectricFieldVisualization
+make: warning:  Clock skew detected.  Your build may be incomplete.
+ 
+10:04:00 **** Incremental Build of configuration Debug for project ElectricFieldVisualization ****
+make all 
+make: Warning: File 'src/main.d' has modification time 3.8 s in the future
+make: warning:  Clock skew detected.  Your build may be incomplete.
+make: Nothing to be done for 'all'.
